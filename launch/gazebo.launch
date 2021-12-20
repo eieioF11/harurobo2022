@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-	<arg name="model" default="$(find harurobo2022)/xacro/OmuniRobot.xacro" />
+	<arg name="model" default="$(find harurobo2022)/xacro/OmuniRobot4.xacro" />
 	<arg name="Field" default="Red"/>
 
 	<param name="robot_description" command="$(find xacro)/xacro $(arg model) --inorder"/>
