@@ -1,0 +1,19 @@
+joint_controller0:
+  type: velocity_controllers/JointVelocityController
+  joint: wheel0_joint
+  pid: {p: 2450.0, i: 0.0, d: 0.0001}
+
+joint_controller1:
+  type: velocity_controllers/JointVelocityController
+  joint: wheel1_joint
+  pid: {p: 2450.0, i: 0.0, d: 0.0001}
+
+joint_controller2:
+  type: velocity_controllers/JointVelocityController
+  joint: wheel2_joint
+  pid: {p: 2450.0, i: 0.0, d: 0.0001}
+
+joint_controller3:
+  type: velocity_controllers/JointVelocityController
+  joint: wheel3_joint
+  pid: {p: 2450.0, i: 0.0, d: 0.0001}

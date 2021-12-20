@@ -1,0 +1,30 @@
+<launch>
+	<!-- Arguments -->
+	<arg name="Field" default="Red"/>
+	<arg name="map_file" default="$(find harurobo2022)/map/map_world_CG.yaml"/>
+	<arg name="open_rviz" default="true"/>
+
+	<!-- odom -->
+	<group if="$(eval Field == 'Red')">
+		<!-- Map server -->
+		<node pkg="map_server" name="map_server" type="map_server" args="$(find harurobo2022)/map/map_world_Red.yaml"/>
+	</group>
+	<group if="$(eval Field == 'Blue')">
+		<!-- Map server -->
+		<node pkg="map_server" name="map_server" type="map_server" args="$(find harurobo2022)/map/map_world_Blue.yaml"/>
+	</group>
+	<!--Path Generator-->
+	<group if="$(eval Field == 'Red')">
+		<!-- Map server -->
+		<node pkg="harurobo2022" type="PathGenerator.py" name="PathGenerator" output="screen" args="r"/>
+	</group>
+	<group if="$(eval Field == 'Blue')">
+		<!-- Map server -->
+		<node pkg="harurobo2022" type="PathGenerator.py" name="PathGenerator" output="screen" args="b"/>
+	</group>
+	<!-- rviz -->
+	<group if="$(arg open_rviz)">
+		<node pkg="rviz" type="rviz" name="rviz" required="true"
+			args="-d $(find harurobo2022)/rviz/odom_gazebo.rviz"/>
+	</group>
+</launch>
