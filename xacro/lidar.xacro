@@ -3,20 +3,20 @@
 		<joint name="${prefix}_joint" type="fixed">
 		<parent link="${parent}"/>
 		<child  link="${prefix}_link"/>
-		<origin xyz="${xyz}" rpy="0 0 0"/>
+		<origin xyz="${xyz}" rpy="0 0 ${radians(0)}"/>
 		</joint>
 		<link name="${prefix}_link">
 		<visual>
 			<origin xyz="0 0 0" rpy="0 0 0" />
 			<geometry>
-			<cylinder radius="0.0329" length="0.04" />
+			<cylinder radius="0.021" length="0.0265" />
 			</geometry>
 			<material name="blue" />
 		</visual>
 		<collision>
 			<origin xyz="0 0 0" rpy="0 0 0"/>
 			<geometry>
-			<cylinder radius="0.0329" length="0.04" />
+			<cylinder radius="0.021" length="0.0265" />
 			</geometry>
 		</collision>
 		</link>
@@ -24,20 +24,20 @@
 		<material>Gazebo/Blue</material>
 		<sensor type="ray" name="${prefix}">
 			<pose>0 0 0 0 0 0</pose>
-			<visualize>false</visualize>
+			<visualize>True</visualize>
 			<update_rate>10</update_rate>
 			<ray>
 			<scan>
 				<horizontal>
 				<samples>400</samples>
 				<resolution>1</resolution>
-				<min_angle>${radians(-180)}</min_angle>
-				<max_angle>${radians(180)}</max_angle>
+				<min_angle>${radians(-120)}</min_angle>
+				<max_angle>${radians(120)}</max_angle>
 				</horizontal>
 			</scan>
 			<range>
-				<min>0.10</min>
-				<max>20.0</max>
+				<min>0.022</min>
+				<max>5.6</max>
 				<resolution>0.01</resolution>
 			</range>
 			<noise>

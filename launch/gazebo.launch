@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-	<arg name="model" default="$(find harurobo2022)/xacro/OmuniRobot4.xacro" />
+	<arg name="model" default="$(find harurobo2022)/xacro/OmuniRobot3.xacro" />
 	<arg name="Field" default="Red"/>
 
 	<param name="robot_description" command="$(find xacro)/xacro $(arg model) --inorder"/>
@@ -33,11 +33,11 @@
 	<node name="controller_spawner" pkg="controller_manager"
 			type="spawner" respawn="false"
 			output="screen" ns="/OmuniRobot"
-			args="joint_controller0 joint_controller1 joint_controller2 joint_controller3 joint_state_controller"/>
+			args="joint_controller0 joint_controller1 joint_controller2 joint_state_controller"/>
 	<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen" ns="/OmuniRobot"/>
 
 	<!-- Controller -->
-	<node pkg="harurobo2022" type="omuni4controller.py" name="omuni4controller" output="screen"/>
+	<node pkg="harurobo2022" type="omuni3controller.py" name="omuni4controller" output="screen"/>
 
     <!-- robot localization --><!--
     <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se" clear_params="true" output="screen">
