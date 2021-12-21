@@ -26,10 +26,10 @@ roslaunch harurobo2022 gazebo.launch Field:=Red
 ```bash
 roslaunch harurobo2022 gazebo.launch Field:=Blue
 ```
-## オムニ四輪コントローラー
+## オムニ三輪コントローラー
 gazebo.launchで実行される
 ```bash
-rosrun harurobo2022 omuni4controller.py
+rosrun harurobo2022 omuni3controller.py
 ```
 ## モデルの表示
 xacroディレクトリに移動し以下のコマンドを実行
