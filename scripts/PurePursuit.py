@@ -235,7 +235,8 @@ class Simple_path_follower():
                 print (i,dist_from_current_pos_np[i])
                 dist_sp_from_nearest=self.tld[i]
                 self.nowCV=self.curvature_val[i]
-                speed=math.fabs(self.target_LookahedDist-self.map(self.nowCV,self.minCV,self.maxCV,self.target_speed_min,self.target_speed_max))
+                speed=self.target_speed_max
+                #speed=math.fabs(self.target_LookahedDist-self.map(self.nowCV,self.minCV,self.maxCV,self.target_speed_min,self.target_speed_max))
                 if (dist_from_current_pos_np[i]) > self.tld[i]:
                     self.target_lookahed_x = self.path_x_np[i]
                     self.target_lookahed_y = self.path_y_np[i]
@@ -275,8 +276,8 @@ class Simple_path_follower():
             elif not self.first:
                 if speed>(self.target_speed_max):
                     speed=self.target_speed_max
-                elif speed<(self.target_speed_min):
-                    speed=self.target_speed_min
+                #elif speed<(self.target_speed_min):
+                #    speed=self.target_speed_min
             else:
                 speed=0
 
