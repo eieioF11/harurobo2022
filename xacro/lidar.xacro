@@ -24,7 +24,7 @@
 		<material>Gazebo/Blue</material>
 		<sensor type="ray" name="${prefix}">
 			<pose>0 0 0 0 0 0</pose>
-			<visualize>True</visualize>
+			<visualize>False</visualize>
 			<update_rate>10</update_rate>
 			<ray>
 			<scan>
