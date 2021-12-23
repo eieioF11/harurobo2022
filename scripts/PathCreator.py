@@ -28,7 +28,7 @@ class path_creator():
         cols = ["x", "y"]
         df = pd.DataFrame(self.ros_path,columns=cols)
         print(df)
-        fpath=os.environ['HOME']+"/catkin_ws/src/harurobo2022/scripts/csv/"
+        fpath=os.environ['HOME']+"/catkin_ws/src/harurobo2022/scripts/csv/"+self.field+"/"
         fname=[]
         for f in glob.glob(fpath+'*.csv'):
             fname.append(int(os.path.splitext(os.path.basename(f))[0]))

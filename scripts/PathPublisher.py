@@ -4,6 +4,7 @@
 import pandas as pd
 import glob
 import os
+import sys
 # import for ros function
 import rospy
 from geometry_msgs.msg import PoseStamped
@@ -19,7 +20,7 @@ class Simple_path_simulator():
     ##################
     # Initialization #
     ##################
-    def __init__(self):
+    def __init__(self,field):
 
         rospy.init_node('Path_Publisher', anonymous=True)
         self.r = rospy.Rate(50)  # 50hz
@@ -35,6 +36,7 @@ class Simple_path_simulator():
         self.odom_sub = rospy.Subscriber('move_end',Bool, self.end)
         self.pathn = Path()
         self.pathn.header = self.path_header
+        self.field = field
 
     def end(self,value):
         print(value)
@@ -59,7 +61,7 @@ class Simple_path_simulator():
 
     def publish_path_topic(self):
         self.n=0
-        fpath=os.environ['HOME']+"/catkin_ws/src/harurobo2022/scripts/csv/"
+        fpath=os.environ['HOME']+"/catkin_ws/src/harurobo2022/scripts/csv/"+self.field+"/"
         fname=[]
         for f in glob.glob(fpath+'*.csv'):
             fname.append(int(os.path.splitext(os.path.basename(f))[0]))
@@ -82,7 +84,9 @@ class Simple_path_simulator():
 
 if __name__ == '__main__':
     print('Path Publisher is Started...')
-    test = Simple_path_simulator()
+    args = sys.argv
+    print(args[1])
+    test = Simple_path_simulator(args[1])
     try:
         test.publish_path_topic()
     except KeyboardInterrupt:
