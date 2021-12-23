@@ -55,8 +55,13 @@ roslaunch harurobo2022 PathGenerator.launch Field:=Red
 roslaunch harurobo2022 PathGenerator.launch Field:=Blue
 ```
 ## csvの経路配信
+スタートゾーンの色が赤の場合
 ```bash
-rosrun harurobo2022 PathPublisher.py
+rosrun harurobo2022 PathPublisher.py r
+```
+スタートゾーンの色が青の場合
+```bash
+rosrun harurobo2022 PathPublisher.py b
 ```
 ## 問題対処法メモ
 フィールドを指定した場合にworldに何も表示されないときは以下のコマンドを入力
