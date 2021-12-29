@@ -7,7 +7,7 @@ import math
 import rospy
 import tf
 import tf2_ros
-from geometry_msgs.msg import PoseStamped, Twist
+from geometry_msgs.msg import PoseStamped, Twist ,Vector3
 from std_msgs.msg import Header
 from visualization_msgs.msg import Marker
 from nav_msgs.msg import Path, Odometry
@@ -37,8 +37,9 @@ class Simple_path_follower():
         rospy.init_node('Simple_Path_Follower', anonymous=True)
         self.r = rospy.Rate(50)  # 50hz
 
-        self.target_speed_max = 1.0            #target speed [m/h]
-        self.target_speed_min = 0.5
+        self.target_speed_max = 1.0         #target max speed [m/h]
+        self.target_speed_min = 0.5         #target min speed [m/h]
+        self.accel = 0.005                  #target accel[m/h^2]
         self.target_LookahedDist = 0.5      #Lookahed distance for Pure Pursuit[m]
 
         self.GOAL_LIMIT = 0.02
@@ -74,6 +75,7 @@ class Simple_path_follower():
         self.target_lookahed_x=0
         self.target_lookahed_y=0
 
+        self.speed=0
         self.oldspeed=0
         self.dist=0
         self.gflag=False
@@ -90,6 +92,15 @@ class Simple_path_follower():
         if value<out_min:
             value=out_min
         return value
+
+    def quaternion_to_euler(self,quaternion):
+        """Convert Quaternion to Euler Angles
+
+        quarternion: geometry_msgs/Quaternion
+        euler: geometry_msgs/Vector3
+        """
+        e = tf.transformations.euler_from_quaternion((quaternion.x, quaternion.y, quaternion.z, quaternion.w))
+        return Vector3(x=e[0], y=e[1], z=e[2])
 
     def publish_lookahed_marker(self,x,y,yaw_euler):
 
@@ -223,10 +234,9 @@ class Simple_path_follower():
         self.value_pub4.publish(self.nowCV)
 
     def mode2(self):
-        speed=0
         Vx=0.0
         Vy=0.0
-        yaw_rate = 0.0
+        cflag=False
         if self.path_first_flg == True and self.odom_first_flg == True:
 
             #Target point calculation
@@ -235,7 +245,7 @@ class Simple_path_follower():
                 print (i,dist_from_current_pos_np[i])
                 dist_sp_from_nearest=self.tld[i]
                 self.nowCV=self.curvature_val[i]
-                speed=self.target_speed_max
+                #speed=self.target_speed_max
                 #speed=math.fabs(self.target_LookahedDist-self.map(self.nowCV,self.minCV,self.maxCV,self.target_speed_min,self.target_speed_max))
                 if (dist_from_current_pos_np[i]) > self.tld[i]:
                     self.target_lookahed_x = self.path_x_np[i]
@@ -252,12 +262,13 @@ class Simple_path_follower():
             target_lookahed_y=self.target_lookahed_y
             #calculate target yaw rate
             self.target_yaw = math.atan2(target_lookahed_y-self.current_y,target_lookahed_x-self.current_x)
+            cflag=self.cflag
             if self.cflag:
-                self.oldspeed=speed
+                self.oldspeed=self.speed
                 self.cflag=False
             else:
                 self.dist=math.sqrt((self.target_lookahed_x-self.current_x)**2+(self.target_lookahed_y-self.current_y)**2)
-                speed=self.map(self.dist,0,self.target_LookahedDist,self.target_speed_min,self.oldspeed)
+                self.speed=self.map(self.dist,0.0,self.target_LookahedDist,0.0,self.oldspeed)
                 if self.dist <= self.GOAL_LIMIT:
                     self.gflag=True
             target_yaw=self.target_yaw
@@ -272,17 +283,19 @@ class Simple_path_follower():
 
             #Set Cmdvel
             if self.first:
-                self.first=False
+                self.speed += self.accel
+                if self.speed>=self.target_speed_max:
+                    self.first=False
             elif not self.first:
-                if speed>(self.target_speed_max):
-                    speed=self.target_speed_max
+                if self.speed>(self.target_speed_max):
+                    self.speed=self.target_speed_max
                 #elif speed<(self.target_speed_min):
                 #    speed=self.target_speed_min
             else:
-                speed=0
+                self.speed=0
 
-            Vx=speed*math.cos(target_yaw)
-            Vy=speed*math.sin(target_yaw)
+            Vx=self.speed*math.cos(target_yaw)
+            Vy=self.speed*math.sin(target_yaw)
 
             cmd_vel = Twist()
             cmd_vel.linear.x = Vx    #[m/s]
@@ -293,7 +306,7 @@ class Simple_path_follower():
             cmd_vel.angular.z = 0.0
             self.cmdvel_pub.publish(cmd_vel)
 
-            rospy.loginfo("Speed:"+str(speed)+"[m/s],Yaw:"+str(target_yaw)+"[rad],tld size:"+str(len(self.tld))+",dist:"+str(self.dist)+"[m]")
+            rospy.loginfo("Speed:"+str(self.speed)+"[m/s],Yaw:"+str(target_yaw)+"[rad],tld size:"+str(len(self.tld))+",dist:"+str(self.dist)+"[m]/cflag"+str(cflag))
             #publish maker
             self.publish_lookahed_marker(target_lookahed_x,target_lookahed_y,target_yaw)
         #debug
@@ -380,6 +393,7 @@ class Simple_path_follower():
             self.first = self.path_first_flg = True
             self.end_pub.publish(True)
             self.gflag=False
+            self.speed=0
             rospy.loginfo("get path")
 
 if __name__ == '__main__':
