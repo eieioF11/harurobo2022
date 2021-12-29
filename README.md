@@ -26,6 +26,13 @@ roslaunch harurobo2022 gazebo.launch Field:=Red
 ```bash
 roslaunch harurobo2022 gazebo.launch Field:=Blue
 ```
+### オブジェクトありの場合
+```bash
+roslaunch harurobo2022 gazebo.launch Field:=RedObj
+```
+```bash
+roslaunch harurobo2022 gazebo.launch Field:=BlueObj
+```
 ## オムニ三輪コントローラー
 gazebo.launchで実行される
 ```bash
