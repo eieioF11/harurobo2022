@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import numpy as np
+import math
 from scipy.special import comb
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -12,6 +13,9 @@ import rospy
 from nav_msgs.msg import Path
 from std_msgs.msg import Header
 from geometry_msgs.msg import PoseStamped
+
+import tf
+
 
 class path_creator():
     def __init__(self,path_pub,index_ox,index_oy,resolution,start,field):
@@ -26,11 +30,26 @@ class path_creator():
         ROBOTSIZE=0.5
         self.boxsize=ROBOTSIZE//self.resolution
         print ("ロボットサイズ",ROBOTSIZE,"boxsize:",self.boxsize)
+        self.line=None
+        self.t1=None
+        self.endx=0
+        self.endy=0
+        self.angle=0.0
+
+    def euler_to_quaternion(self,angle):
+        q = tf.transformations.quaternion_from_euler(0,0,math.radians(angle))
+        return q
 
     def save_csv(self):
         # Save CSV path file
         cols = ["x", "y"]
         df = pd.DataFrame(self.ros_path,columns=cols)
+        print(self.angle)
+        q=self.euler_to_quaternion(self.angle)
+        df.insert(len(df.columns),"w0",q[0])
+        df.insert(len(df.columns),"w1",q[1])
+        df.insert(len(df.columns),"w2",q[2])
+        df.insert(len(df.columns),"w3",q[3])
         print(df)
         fpath=os.environ['HOME']+"/catkin_ws/src/harurobo2022/scripts/csv/"+self.field+"/"
         fname=[]
@@ -45,31 +64,50 @@ class path_creator():
     def motion(self,event):
         x = event.xdata
         y = event.ydata
-        self.ln_v.set_xdata(x)
-        self.ln_h.set_ydata(y)
+        try:
+            self.ln_v.set_xdata(x)
+            self.ln_h.set_ydata(y)
+            self.rects.set_x(x-self.boxsize//2)
+            self.rects.set_y(y-self.boxsize//2)
+            #print(x-self.boxsize//2,y-self.boxsize//2)
 
-        self.rects.set_x(x-self.boxsize//2)
-        self.rects.set_y(y-self.boxsize//2)
+            self.t1.set_x(x+10)
+            self.t1.set_y(y+10)
+            self.t1.set_text("")
+            if self.line!=None:
+                self.line.remove()
+                self.line=None
 
-        if event.button == 1:
-            pass
-        if event.button == 3:
+            if event.button == 1:
+                pass
+            if event.button == 2:
+                self.line,=plt.plot([x,self.endx],[y,self.endy],c="green")
+                self.angle=int(math.degrees(math.atan2(self.endy-y,self.endx-x)))
+                self.t1.set_x(x+10)
+                self.t1.set_y(y+10)
+                self.t1.set_text(str(self.angle)+"[deg]")
+        except:
             pass
         plt.draw()
 
     def release(self,event):
         x = int(event.xdata)
         y = int(event.ydata)
+
         if event.button == 1:
             if not self.map[y,x] and not self.end:
                 plt.title("Initial position addition with i key")
                 if self.path==[]:
                     self.path=np.array([y,x])
                     dot,=plt.plot(self.path[1],self.path[0],"o",c="red")
+                    self.endx=self.path[1]
+                    self.endy=self.path[0]
                     self.dot.append(dot)
                 else:
                     self.path=np.vstack((self.path,[y,x]))
                     dot,=plt.plot(self.path[:,1],self.path[:,0],"o",c="red")
+                    self.endx=self.path[-1,1]
+                    self.endy=self.path[-1,0]
                     self.dot.append(dot)
             else:
                 plt.title("Error")
@@ -77,6 +115,7 @@ class path_creator():
         if event.button == 3:
             pass
             print(x,y)
+
         plt.draw()
 
     def onkey(self,event):
@@ -95,10 +134,14 @@ class path_creator():
                 if self.path==[]:
                     self.path=np.array(self.start)
                     dot,=plt.plot(self.path[1],self.path[0],"o",c="red")
+                    self.endx=self.path[1]
+                    self.endy=self.path[0]
                     self.dot.append(dot)
                 else:
                     self.path=np.vstack((self.path,self.start))
                     dot,=plt.plot(self.path[:,1],self.path[:,0],"o",c="red")
+                    self.endx=self.path[-1,1]
+                    self.endy=self.path[-1,0]
                     self.dot.append(dot)
             if event.key == 'd':
                 if self.path!=[]:
@@ -108,6 +151,7 @@ class path_creator():
                     print(self.dot,self.path)
                 else:
                     plt.title("Error")
+
         if event.key == 'n':
             if self.end:
                 self.path=[self.path[-1,0],self.path[-1,1]]
@@ -187,7 +231,6 @@ class path_creator():
         self.ln_h = plt.axhline(0)
         self.rects = plt.Rectangle((0,0),self.boxsize,self.boxsize,color='m',fill=False)
         ax.add_artist(self.rects)
-
         self.path=[]
         x=y=0
         if self.field=="r":
@@ -204,6 +247,7 @@ class path_creator():
             h=150
             plt.xlim(x,x+w)
             plt.ylim(y+h,y)
+        self.t1 = ax.text(x,y, str(""))
         plt.text(x+10,y+10, "d:delete p:path generation n:create new path i:initial position" )
         #plt.imshow(self.map[y:y+h,x:x+w])
         plt.imshow(self.map)
