@@ -15,6 +15,16 @@
 			<arg name="world_name" value="$(find harurobo2022)/world/world_Red.world"/>
 		</include>
 	</group>
+	<group if="$(eval Field == 'RedObj')">
+		<include file="$(find gazebo_ros)/launch/empty_world.launch">
+			<arg name="paused" value="false"/>
+			<arg name="use_sim_time" value="true"/>
+			<arg name="gui" value="true"/>
+			<arg name="headless" value="false"/>
+			<arg name="debug" value="false"/>
+			<arg name="world_name" value="$(find harurobo2022)/world/world_Red_obj.world"/>
+		</include>
+	</group>
 	<group if="$(eval Field == 'Blue')">
 		<include file="$(find gazebo_ros)/launch/empty_world.launch">
 			<arg name="paused" value="false"/>
@@ -23,6 +33,16 @@
 			<arg name="headless" value="false"/>
 			<arg name="debug" value="false"/>
 			<arg name="world_name" value="$(find harurobo2022)/world/world_Blue.world"/>
+		</include>
+	</group>
+	<group if="$(eval Field == 'BlueObj')">
+		<include file="$(find gazebo_ros)/launch/empty_world.launch">
+			<arg name="paused" value="false"/>
+			<arg name="use_sim_time" value="true"/>
+			<arg name="gui" value="true"/>
+			<arg name="headless" value="false"/>
+			<arg name="debug" value="false"/>
+			<arg name="world_name" value="$(find harurobo2022)/world/world_Blue_obj.world"/>
 		</include>
 	</group>
 
@@ -37,7 +57,7 @@
 	<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen" ns="/OmuniRobot"/>
 
 	<!-- Controller -->
-	<node pkg="harurobo2022" type="omuni3controller.py" name="omuni4controller" output="screen"/>
+	<node pkg="harurobo2022" type="omuni3controller.py" name="omuni3controller" output="screen"/>
 
     <!-- robot localization --><!--
     <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se" clear_params="true" output="screen">

@@ -7,11 +7,11 @@
 	<!-- odom -->
 	<group if="$(eval Field == 'Red')">
 		<!-- Map server -->
-		<node pkg="map_server" name="map_server" type="map_server" args="$(find harurobo2022)/map/map_world_Red.yaml"/>
+		<node pkg="map_server" name="map_server" type="map_server" args="$(find harurobo2022)/map/map_world_Red_obj.yaml"/>
 	</group>
 	<group if="$(eval Field == 'Blue')">
 		<!-- Map server -->
-		<node pkg="map_server" name="map_server" type="map_server" args="$(find harurobo2022)/map/map_world_Blue.yaml"/>
+		<node pkg="map_server" name="map_server" type="map_server" args="$(find harurobo2022)/map/map_world_Blue_obj.yaml"/>
 	</group>
 	<!--Path Generator-->
 	<group if="$(eval Field == 'Red')">
