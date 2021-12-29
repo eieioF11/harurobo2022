@@ -54,6 +54,10 @@ class Simple_path_simulator():
             temp_pose = PoseStamped()
             temp_pose.pose.position.x = self.csv_path_data["x"][indx]
             temp_pose.pose.position.y = self.csv_path_data["y"][indx]
+            temp_pose.pose.orientation.x = self.csv_path_data["w0"][indx]
+            temp_pose.pose.orientation.y = self.csv_path_data["w1"][indx]
+            temp_pose.pose.orientation.z = self.csv_path_data["w2"][indx]
+            temp_pose.pose.orientation.w = self.csv_path_data["w3"][indx]
             temp_pose.header = self.path_header
             temp_pose.header.seq = indx
             poses_list.append(temp_pose)
