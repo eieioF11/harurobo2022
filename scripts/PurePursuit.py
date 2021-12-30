@@ -3,11 +3,13 @@
 
 import numpy as np
 import math
+from PID import PID
+import time
 # import for ros function
 import rospy
 import tf
 import tf2_ros
-from geometry_msgs.msg import PoseStamped, Twist ,Vector3
+from geometry_msgs.msg import PoseStamped, Twist
 from std_msgs.msg import Header
 from visualization_msgs.msg import Marker
 from nav_msgs.msg import Path, Odometry
@@ -75,6 +77,12 @@ class Simple_path_follower():
         self.target_lookahed_x=0
         self.target_lookahed_y=0
 
+        self.anglePID=PID(1,0.0001,0.00001,-1.0,1.0)
+        self.nowt=time.time()
+        self.oldt=time.time()
+
+        self.angle=0.0
+
         self.speed=0
         self.oldspeed=0
         self.dist=0
@@ -93,14 +101,14 @@ class Simple_path_follower():
             value=out_min
         return value
 
-    def quaternion_to_euler(self,quaternion):
-        """Convert Quaternion to Euler Angles
-
-        quarternion: geometry_msgs/Quaternion
-        euler: geometry_msgs/Vector3
-        """
-        e = tf.transformations.euler_from_quaternion((quaternion.x, quaternion.y, quaternion.z, quaternion.w))
-        return Vector3(x=e[0], y=e[1], z=e[2])
+    def quaternion_to_euler(self,w):
+        e = tf.transformations.euler_from_quaternion((w[0],w[1],w[2],w[3]))
+        return e[2]
+    
+    def deltaT(self):
+        self.oldt=self.nowt
+        self.nowt=time.time()
+        return self.nowt-self.oldt
 
     def publish_lookahed_marker(self,x,y,yaw_euler):
 
@@ -236,6 +244,7 @@ class Simple_path_follower():
     def mode2(self):
         Vx=0.0
         Vy=0.0
+        yaw_rate = 0.0
         cflag=False
         if self.path_first_flg == True and self.odom_first_flg == True:
 
@@ -282,6 +291,7 @@ class Simple_path_follower():
                 return
 
             #Set Cmdvel
+            dt=self.deltaT()
             if self.first:
                 self.speed += self.accel
                 if self.speed>=self.target_speed_max:
@@ -294,8 +304,9 @@ class Simple_path_follower():
             else:
                 self.speed=0
 
-            Vx=self.speed*math.cos(target_yaw)
-            Vy=self.speed*math.sin(target_yaw)
+            yaw_rate=-1*self.anglePID.output(self.angle,self.current_yaw_euler,dt)
+            Vx=self.speed*math.cos(target_yaw-self.current_yaw_euler)
+            Vy=self.speed*math.sin(target_yaw-self.current_yaw_euler)
 
             cmd_vel = Twist()
             cmd_vel.linear.x = Vx    #[m/s]
@@ -303,16 +314,15 @@ class Simple_path_follower():
             cmd_vel.linear.z = 0.0
             cmd_vel.angular.x = 0.0
             cmd_vel.angular.y = 0.0
-            cmd_vel.angular.z = 0.0
+            cmd_vel.angular.z = yaw_rate
             self.cmdvel_pub.publish(cmd_vel)
-
-            rospy.loginfo("Speed:"+str(self.speed)+"[m/s],Yaw:"+str(target_yaw)+"[rad],tld size:"+str(len(self.tld))+",dist:"+str(self.dist)+"[m]/cflag"+str(cflag))
+            rospy.loginfo("dt:{:.2f}[s],Speed:{:.3f}[m/s],TgYaw:{:.3f}[rad],angle:{:.3f}[deg],Yaw:{:.3f}[deg],dist:{:.3f}[m],tld size:{}".format(dt,self.speed,target_yaw,math.degrees(self.angle),math.degrees(self.current_yaw_euler),self.dist,len(self.tld)))
             #publish maker
             self.publish_lookahed_marker(target_lookahed_x,target_lookahed_y,target_yaw)
         #debug
         self.value_pub1.publish(Vx)
         self.value_pub2.publish(Vy)
-        self.value_pub3.publish(0.0)
+        self.value_pub3.publish(yaw_rate)
         self.value_pub4.publish(self.nowCV)
 
     ###################
@@ -367,13 +377,22 @@ class Simple_path_follower():
             last_x = 0.0
             last_y = 0.0
             last_st = 0.0
+            w0=0.0
+            w1=0.0
+            w2=0.0
+            w3=0.0
             for indx in range(len(msg.poses)):
                 self.path_x_np[indx] = msg.poses[indx].pose.position.x
                 self.path_y_np[indx] = msg.poses[indx].pose.position.y
+                w0=msg.poses[indx].pose.orientation.x
+                w1=msg.poses[indx].pose.orientation.y
+                w2=msg.poses[indx].pose.orientation.z
+                w3=msg.poses[indx].pose.orientation.w
                 self.path_st_np[indx] = last_st + math.sqrt((self.path_x_np[indx]-last_x)**2 + (self.path_y_np[indx]-last_y)**2)
                 last_x = self.path_x_np[indx]
                 last_y = self.path_y_np[indx]
                 last_st = self.path_st_np[indx]
+            self.angle=self.quaternion_to_euler([w0,w1,w2,w3])
             #曲率計算
             x_t = np.gradient(self.path_x_np)
             y_t = np.gradient(self.path_y_np)
