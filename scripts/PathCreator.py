@@ -82,7 +82,9 @@ class path_creator():
                 pass
             if event.button == 2:
                 self.line,=plt.plot([x,self.endx],[y,self.endy],c="green")
-                self.angle=int(math.degrees(math.atan2(self.endy-y,self.endx-x)))
+                self.angle=int(math.degrees(math.atan2(self.endx-x,self.endy-y))+180)
+                if self.angle>180:
+                    self.angle-=360
                 self.t1.set_x(x+10)
                 self.t1.set_y(y+10)
                 self.t1.set_text(str(self.angle)+"[deg]")
