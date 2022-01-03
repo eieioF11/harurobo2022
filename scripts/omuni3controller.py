@@ -21,7 +21,7 @@ class omuni3():
         self.L=0.1*sqrt(2) #0.1414...
         self.Adjust=16.7 #1.0
         # Initialization
-        rospy.init_node('Simple_Path_Follower', anonymous=True)
+        rospy.init_node('Omuni3Controller', anonymous=True)
         rospy.loginfo("R:%f,L:%f",self.R,self.L)
         self.r = rospy.Rate(50)  # 50hz
         #initialize publisher
@@ -68,7 +68,7 @@ class omuni3():
         self.c2.publish(w2)
 
     def get_cmd(self,value):
-        #rospy.loginfo("LinerX:%f",value.linear.x)
+        #rospy.loginfo("LinerX:%from std_msgs.msg import ColorRGBA, Float32, Float64f",value.linear.x)
         #rospy.loginfo("LinerY:%f",value.linear.y)
         #rospy.loginfo("Angular:%f",value.angular.z)
         self.move(value.linear.x,value.linear.y,value.angular.z)
