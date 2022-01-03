@@ -104,7 +104,7 @@ class Simple_path_follower():
     def quaternion_to_euler(self,w):
         e = tf.transformations.euler_from_quaternion((w[0],w[1],w[2],w[3]))
         return e[2]
-    
+
     def deltaT(self):
         self.oldt=self.nowt
         self.nowt=time.time()
