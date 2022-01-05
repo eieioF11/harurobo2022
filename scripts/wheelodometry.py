@@ -3,14 +3,16 @@
 
 import numpy as np
 import math
+
 # import for ros function
 import rospy
 import tf
 import tf2_ros
-from geometry_msgs.msg import Point, Pose, Quaternion, Twist, Vector3
+from geometry_msgs.msg import Point, Pose, Quaternion, Twist, Vector3Stamped
+from sensor_msgs.msg import Imu
 
 from jsk_rviz_plugins.msg import *
-from std_msgs.msg import ColorRGBA, Float32, Float64
+from std_msgs.msg import ColorRGBA, Float32, Float64 ,String
 from nav_msgs.msg import Odometry
 
 class wheelodom():
@@ -26,11 +28,21 @@ class wheelodom():
         self.odom = rospy.Publisher("/odom", Odometry, queue_size=5)
         self.odom_wheel = rospy.Publisher("/OmuniRobot/odom", Odometry, queue_size=5)
         #initialize subscriber
-        #self.cmd_sub = rospy.Subscriber("/cmd_vel",Twist, self.get_cmd)
-        self.gazebo_states_sub = rospy.Subscriber("/Encoder_odom",Odometry, self.get_whoeelodom)
+        self.imu_sub = rospy.Subscriber("/imu/rpy",Vector3Stamped, self.get_rpy)
+        self.enc_odom_sub = rospy.Subscriber("/Encoder_odom",Odometry, self.get_whoeelodom)
         self.odom_broadcaster = tf.TransformBroadcaster()
         self.x=0
         self.y=0
+        self.yaw=0.0
+        rospy.spin()
+
+    def reset(self):
+        self.x=0
+        self.y=0
+
+    def get_rpy(self,value):
+        #print(value)
+        self.yaw=value.vector.z
 
     def get_whoeelodom(self,value):
         current_time = rospy.Time.now()
@@ -38,25 +50,24 @@ class wheelodom():
         #print(value.pose.pose.position.x,value.pose.pose.position.y)
         #math.radians(angle)
         q=[0,0,0,0]
-        e = tf.transformations.euler_from_quaternion((q[0],q[1],q[2],q[3]))
+        self.yaw
         w0=value.twist.twist.linear.x
-        w1=value.twist.twist.linear.y
+        w1=value.twist.twist.linear.y*-1
         rx=self.R*0.5*(w0+w1)
         ry=self.R*0.8660254039*(w0-w1)
-        self.x+=rx*math.cos(e[2])-ry*math.sin(e[2])
-        self.y+=rx*math.sin(e[2])+ry*math.cos(e[2])
+        self.x+=rx*math.cos(self.yaw)-ry*math.sin(self.yaw)
+        self.y+=rx*math.sin(self.yaw)+ry*math.cos(self.yaw)
         value.pose.pose.position.x=self.x
         value.pose.pose.position.y=self.y
         value.twist.twist.linear.x=rx
         value.twist.twist.linear.y=ry
 
-        q = tf.transformations.quaternion_from_euler(0,0,e[2])
+        q = tf.transformations.quaternion_from_euler(0,0,self.yaw)
         value.pose.pose.orientation.x=q[0]
         value.pose.pose.orientation.y=q[1]
         value.pose.pose.orientation.z=q[2]
         value.pose.pose.orientation.w=q[3]
-
-        print(value.pose.pose.position.x,value.pose.pose.position.y,",",value.twist.twist.linear.x,value.twist.twist.linear.y)
+        print("({:.2f},{:.2f}),r({:.2f},{:.2f})w({:.2f},{:.2f}){:.2f}[deg]".format(value.pose.pose.position.x,value.pose.pose.position.y,value.twist.twist.linear.x,value.twist.twist.linear.y,w0,w1,math.degrees(self.yaw)))
         # first, we'll publish the transform over tf
         self.odom_broadcaster.sendTransform(
             (value.pose.pose.position.x,value.pose.pose.position.y, 0.),
