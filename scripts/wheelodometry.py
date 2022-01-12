@@ -3,6 +3,7 @@
 
 import numpy as np
 import math
+import time
 
 # import for ros function
 import rospy
@@ -34,6 +35,7 @@ class wheelodom():
         self.x=0
         self.y=0
         self.yaw=0.0
+        self.oldtime=time.time()
         rospy.spin()
 
     def reset(self):
@@ -46,17 +48,20 @@ class wheelodom():
 
     def get_whoeelodom(self,value):
         current_time = rospy.Time.now()
+        nowtime = time.time()
         #rospy.loginfo("state3:%f",value.process_value)
         #print(value.pose.pose.position.x,value.pose.pose.position.y)
         #math.radians(angle)
         q=[0,0,0,0]
-        self.yaw
-        w0=value.twist.twist.linear.x
+        w0=value.twist.twist.linear.x*-1
         w1=value.twist.twist.linear.y*-1
-        rx=self.R*0.5*(w0+w1)
-        ry=self.R*0.8660254039*(w0-w1)
-        self.x+=rx*math.cos(self.yaw)-ry*math.sin(self.yaw)
-        self.y+=rx*math.sin(self.yaw)+ry*math.cos(self.yaw)
+        ry=self.R*0.7071067812*(w0+w1)
+        rx=self.R*0.7071067812*(w0-w1)
+        dt=nowtime-self.oldtime
+        #ry=self.R*w1
+        #rx=self.R*w0
+        self.x+=(rx*math.cos(self.yaw)-ry*math.sin(self.yaw))*dt
+        self.y+=(rx*math.sin(self.yaw)+ry*math.cos(self.yaw))*dt
         value.pose.pose.position.x=self.x
         value.pose.pose.position.y=self.y
         value.twist.twist.linear.x=rx
@@ -67,7 +72,7 @@ class wheelodom():
         value.pose.pose.orientation.y=q[1]
         value.pose.pose.orientation.z=q[2]
         value.pose.pose.orientation.w=q[3]
-        print("({:.2f},{:.2f}),r({:.2f},{:.2f})w({:.2f},{:.2f}){:.2f}[deg]".format(value.pose.pose.position.x,value.pose.pose.position.y,value.twist.twist.linear.x,value.twist.twist.linear.y,w0,w1,math.degrees(self.yaw)))
+        print("({:.2f},{:.2f}),r({:.2f},{:.2f})w({:.2f},{:.2f}){:.2f}[deg]{:.2f}".format(value.pose.pose.position.x,value.pose.pose.position.y,value.twist.twist.linear.x,value.twist.twist.linear.y,w0,w1,math.degrees(self.yaw),dt))
         # first, we'll publish the transform over tf
         self.odom_broadcaster.sendTransform(
             (value.pose.pose.position.x,value.pose.pose.position.y, 0.),
@@ -86,6 +91,8 @@ class wheelodom():
         # set the velocity
         odom.child_frame_id = "base_link"
         odom.twist.twist = value.twist.twist
+
+        self.oldtime=nowtime
 
         # publish the message
         self.odom.publish(odom)
