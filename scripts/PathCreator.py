@@ -243,8 +243,8 @@ class path_creator():
             plt.xlim(x,x+w)
             plt.ylim(y+h,y)
         elif self.field=="b":
-            x=970
-            y=880
+            x=760
+            y=970
             w=270
             h=150
             plt.xlim(x,x+w)

@@ -86,6 +86,14 @@ rosrun harurobo2022 PathPublisher.py r
 ```bash
 rosrun harurobo2022 PathPublisher.py b
 ```
+## mapping
+```bash
+ roslaunch harurobo2022 gmapping.launch
+```
+保存
+```bash
+rosrun map_server map_saver -f ファイル名
+```
 ## 問題対処法メモ
 フィールドを指定した場合にworldに何も表示されないときは以下のコマンドを入力
 ```bash
