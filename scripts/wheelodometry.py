@@ -32,6 +32,7 @@ class wheelodom():
         self.imu_sub = rospy.Subscriber("/imu/rpy",Vector3Stamped, self.get_rpy)
         self.enc_odom_sub = rospy.Subscriber("/Encoder_odom",Odometry, self.get_whoeelodom)
         self.odom_broadcaster = tf.TransformBroadcaster()
+        self.br = tf2_ros.StaticTransformBroadcaster()
         self.x=0
         self.y=0
         self.yaw=0.0
@@ -53,10 +54,10 @@ class wheelodom():
         #print(value.pose.pose.position.x,value.pose.pose.position.y)
         #math.radians(angle)
         q=[0,0,0,0]
-        w0=value.twist.twist.linear.x*-1
-        w1=value.twist.twist.linear.y*-1
+        w0=value.twist.twist.linear.x
+        w1=value.twist.twist.linear.y
         ry=self.R*0.7071067812*(w0+w1)
-        rx=self.R*0.7071067812*(w0-w1)
+        rx=self.R*0.7071067812*(w1-w0)
         dt=nowtime-self.oldtime
         #ry=self.R*w1
         #rx=self.R*w0
@@ -81,6 +82,24 @@ class wheelodom():
             "base_link",
             "odom"
         )
+
+        t = geometry_msgs.msg.TransformStamped()
+
+        t.header.stamp = rospy.Time.now()
+        t.header.frame_id = 'odom'
+        t.child_frame_id = 'base_link'
+
+        # 6D pose (位置 translation、姿勢 rotation)
+        t.transform.translation.x = value.pose.pose.position.x
+        t.transform.translation.y = value.pose.pose.position.y
+        t.transform.translation.z = 0
+
+        t.transform.rotation.x = q[0]
+        t.transform.rotation.y = q[1]
+        t.transform.rotation.z = q[2]
+        t.transform.rotation.w = q[3]
+
+        self.br.sendTransform(t)
 
         odom = Odometry()
         odom.header.stamp = current_time

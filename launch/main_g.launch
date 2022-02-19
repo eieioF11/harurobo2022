@@ -4,18 +4,15 @@
 	<arg name="map_file" default="$(find harurobo2022)/map/map_world_CG.yaml"/>
 	<arg name="open_rviz" default="true"/>
 
-	<!--TF-->
-	<node pkg="tf" type="static_transform_publisher" name="odom_2_base_link" args="0.27 0 0 0 0 3.14 base_link laser 100" />
-
 	<!-- odom -->
 	<group if="$(eval Field == 'Red')">
-		<include file="$(find harurobo2022)/launch/odom.launch">
+		<include file="$(find harurobo2022)/launch/odom_gazebo.launch">
 			<arg name="map_file" value="$(find harurobo2022)/map/map_world_Red.yaml" />
 			<arg name="open_rviz" default="$(arg open_rviz)"/>
 		</include>
 	</group>
 	<group if="$(eval Field == 'Blue')">
-		<include file="$(find harurobo2022)/launch/odom.launch">
+		<include file="$(find harurobo2022)/launch/odom_gazebo.launch">
 			<arg name="map_file" value="$(find harurobo2022)/map/map_world_Blue.yaml" />
 			<arg name="open_rviz" default="$(arg open_rviz)"/>
 		</include>
