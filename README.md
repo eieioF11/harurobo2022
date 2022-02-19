@@ -17,6 +17,22 @@ sudo apt-get install ros-melodic-teleop-twist-keyboard
 ```bash
 rosrun teleop_twist_keyboard teleop_twist_keyboard.py
 ```
+## Serial port 確認
+```bash
+ls -l /dev/serial/by-id/
+```
+## USB Serial
+```bash
+rosrun rosserial_python serial_node.py /dev/ttyUSB0 _baud:=115200
+```
+## IMU
+```bash
+rosrun um7 um7_driver _port:=/dev/ttyACM0
+```
+## LiDAR
+```bash
+rosrun urg_node urg_node _serial_port:=/dev/ttyACM0
+```
 ## Gazebo
 スタートゾーンの色が赤の場合
 ```bash
