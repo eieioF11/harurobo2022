@@ -19,7 +19,7 @@
 	</group>
 
 	<!-- Path Follower -->
-	<node pkg="harurobo2022" type="PurePursuit.py" name="PurePursuit" output="screen"/>
+	<node pkg="harurobo2022" type="PurePursuit_gazebo.py" name="PurePursuit" output="screen"/>
 
 	<node pkg="jsk_rviz_plugins"
 			type="rosconsole_overlay_text.py"

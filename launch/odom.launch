@@ -4,6 +4,7 @@
 	<arg name="open_rviz" default="true"/>
 	<arg name="cmd_vel_topic" default="/cmd_vel"/>
 	<arg name="scan_topic" default="/scan"/>
+	<arg name="Field" default="Red"/>
 
 	<!-- Map server -->
 	<node pkg="map_server" name="map_server" type="map_server" args="$(arg map_file)"/>
@@ -14,8 +15,16 @@
 	</include>
 
 	<!-- rviz -->
-	<group if="$(arg open_rviz)">
-		<node pkg="rviz" type="rviz" name="rviz" required="true"
-			args="-d $(find harurobo2022)/rviz/odom.rviz"/>
+	<group if="$(eval Field == 'Red')">
+		<group if="$(arg open_rviz)">
+			<node pkg="rviz" type="rviz" name="rviz" required="true"
+				args="-d $(find harurobo2022)/rviz/odom_r.rviz"/>
+		</group>
+	</group>
+	<group if="$(eval Field == 'Blue')">
+		<group if="$(arg open_rviz)">
+			<node pkg="rviz" type="rviz" name="rviz" required="true"
+				args="-d $(find harurobo2022)/rviz/odom_b.rviz"/>
+		</group>
 	</group>
 </launch>
