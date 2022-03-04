@@ -33,6 +33,14 @@ rosrun um7 um7_driver _port:=/dev/ttyACM0
 ```bash
 rosrun urg_node urg_node _serial_port:=/dev/ttyACM0
 ```
+## オドメトリ
+```bash
+rosrun harurobo2022 wheelodometry.py
+```
+## main launch
+```bash
+roslaunch harurobo2022 main.launch
+```
 ## Gazebo
 スタートゾーンの色が赤の場合
 ```bash
