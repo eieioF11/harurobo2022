@@ -29,13 +29,15 @@ class wheelodom():
         self.odom = rospy.Publisher("/odom", Odometry, queue_size=5)
         self.odom_wheel = rospy.Publisher("/OmuniRobot/odom", Odometry, queue_size=5)
         #initialize subscriber
-        self.imu_sub = rospy.Subscriber("/imu/rpy",Vector3Stamped, self.get_rpy)
+        #self.imu_sub = rospy.Subscriber("/imu/rpy",Vector3Stamped, self.get_rpy)
         self.enc_odom_sub = rospy.Subscriber("/Encoder_odom",Odometry, self.get_whoeelodom)
         self.odom_broadcaster = tf.TransformBroadcaster()
         self.br = tf2_ros.StaticTransformBroadcaster()
         self.x=0
         self.y=0
         self.yaw=0.0
+        self.yaw_range=0.0
+        self.iniflag=True
         self.oldtime=time.time()
         rospy.spin()
 
@@ -56,11 +58,19 @@ class wheelodom():
         q=[0,0,0,0]
         w0=value.twist.twist.linear.x
         w1=value.twist.twist.linear.y
-        ry=self.R*0.7071067812*(w0+w1)
-        rx=self.R*0.7071067812*(w1-w0)
-        dt=nowtime-self.oldtime
+        if self.iniflag:
+            self.yaw_range=value.twist.twist.angular.z
+            self.iniflag=False
+        self.yaw=(value.twist.twist.angular.z-self.yaw_range)*-1
+        value.twist.twist.angular.z=0.0
+        #ホイールの速度をロボット座標のxy方向の速度に変換
+        rx=self.R*0.7071067812*(w0+w1)
+        ry=self.R*0.7071067812*(w1-w0)
         #ry=self.R*w1
         #rx=self.R*w0
+        #計算間隔の算出
+        dt=nowtime-self.oldtime
+        #フィールド座標系の位置に変換
         self.x+=(rx*math.cos(self.yaw)-ry*math.sin(self.yaw))*dt
         self.y+=(rx*math.sin(self.yaw)+ry*math.cos(self.yaw))*dt
         value.pose.pose.position.x=self.x
@@ -73,7 +83,7 @@ class wheelodom():
         value.pose.pose.orientation.y=q[1]
         value.pose.pose.orientation.z=q[2]
         value.pose.pose.orientation.w=q[3]
-        print("({:.2f},{:.2f}),r({:.2f},{:.2f})w({:.2f},{:.2f}){:.2f}[deg]{:.2f}".format(value.pose.pose.position.x,value.pose.pose.position.y,value.twist.twist.linear.x,value.twist.twist.linear.y,w0,w1,math.degrees(self.yaw),dt))
+        print("({:5.2f},{:5.2f}),r({:5.2f},{:5.2f})w({:5.2f},{:5.2f}){:5.2f}[deg]{:5.2f}".format(value.pose.pose.position.x,value.pose.pose.position.y,value.twist.twist.linear.x,value.twist.twist.linear.y,w0,w1,math.degrees(self.yaw),dt))
         # first, we'll publish the transform over tf
         self.odom_broadcaster.sendTransform(
             (value.pose.pose.position.x,value.pose.pose.position.y, 0.),

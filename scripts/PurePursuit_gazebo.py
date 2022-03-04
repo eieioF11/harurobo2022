@@ -39,12 +39,10 @@ class Simple_path_follower():
         rospy.init_node('Simple_Path_Follower', anonymous=True)
         self.r = rospy.Rate(50)  # 50hz
 
-        self.target_speed_max    = 2.0   #target max speed [m/h]
-        self.target_speed_min    = 0.3   #target min speed [m/h]
-        self.accel               = 0.01  #target accel[m/h^2]
-        self.target_LookahedDist = 0.5   #Lookahed distance for Pure Pursuit[m]
-        angler_max               = 0.5   #[rad/s]
-        self.anglePID=PID(0.5,0.1,0.001,-angler_max,angler_max)
+        self.target_speed_max = 1.0         #target max speed [m/h]
+        self.target_speed_min = 0.5         #target min speed [m/h]
+        self.accel = 0.005                  #target accel[m/h^2]
+        self.target_LookahedDist = 0.5      #Lookahed distance for Pure Pursuit[m]
 
         self.GOAL_LIMIT = 0.02
         self.MODE = mode.POSFIXED
@@ -79,11 +77,9 @@ class Simple_path_follower():
         self.target_lookahed_x=0
         self.target_lookahed_y=0
 
+        self.anglePID=PID(1,0.0001,0.00001,-1.0,1.0)
         self.nowt=time.time()
         self.oldt=time.time()
-
-        self.GOAL=[0,0]
-        self.goaldist_max=0.0
 
         self.angle=0.0
 
@@ -277,10 +273,11 @@ class Simple_path_follower():
             self.target_yaw = math.atan2(target_lookahed_y-self.current_y,target_lookahed_x-self.current_x)
             cflag=self.cflag
             if self.cflag:
+                self.oldspeed=self.speed
                 self.cflag=False
             else:
                 self.dist=math.sqrt((self.target_lookahed_x-self.current_x)**2+(self.target_lookahed_y-self.current_y)**2)
-                #self.speed=self.map(self.dist,0.0,self.target_LookahedDist,0.0,self.oldspeed)
+                self.speed=self.map(self.dist,0.0,self.target_LookahedDist,0.0,self.oldspeed)
                 if self.dist <= self.GOAL_LIMIT:
                     self.gflag=True
             target_yaw=self.target_yaw
@@ -289,7 +286,7 @@ class Simple_path_follower():
                 cmd_vel = Twist()
                 self.cmdvel_pub.publish(cmd_vel)
                 self.path_first_flg = False
-                rospy.loginfo("dist:"+str(self.dist)+"[m],"+str(self.GOAL))
+                rospy.loginfo("dist:"+str(self.dist)+"[m]")
                 rospy.loginfo("goal!!")
                 return
 
@@ -307,14 +304,7 @@ class Simple_path_follower():
             else:
                 self.speed=0
 
-            goaldist = math.sqrt((self.GOAL[0]-self.current_x)**2+(self.GOAL[1]-self.current_y)**2)
-            distlim = self.goaldist_max/5
-            if goaldist <= distlim:
-                self.speed=self.map(goaldist,0.0,distlim,0.0,self.oldspeed)
-            else:
-                self.oldspeed=self.speed
-
-            yaw_rate=self.anglePID.output(self.angle,self.current_yaw_euler,dt)
+            yaw_rate=-1*self.anglePID.output(self.angle,self.current_yaw_euler,dt)
             Vx=self.speed*math.cos(target_yaw-self.current_yaw_euler)
             Vy=self.speed*math.sin(target_yaw-self.current_yaw_euler)
 
@@ -326,12 +316,9 @@ class Simple_path_follower():
             cmd_vel.angular.y = 0.0
             cmd_vel.angular.z = yaw_rate
             self.cmdvel_pub.publish(cmd_vel)
-            rospy.loginfo("dt:{:.2f}[s],Speed:{:.3f}[m/s],TgYaw:{:.3f}[rad],angle:{:.3f}[deg],Yaw:{:.3f}[deg],dist:{:.3f}[m],goaldist:{:.3f},distlim:{:.3f},tld size:{}".format(dt,self.speed,target_yaw,math.degrees(self.angle),math.degrees(self.current_yaw_euler),self.dist,goaldist,distlim,len(self.tld)))
+            rospy.loginfo("dt:{:.2f}[s],Speed:{:.3f}[m/s],TgYaw:{:.3f}[rad],angle:{:.3f}[deg],Yaw:{:.3f}[deg],dist:{:.3f}[m],tld size:{}".format(dt,self.speed,target_yaw,math.degrees(self.angle),math.degrees(self.current_yaw_euler),self.dist,len(self.tld)))
             #publish maker
             self.publish_lookahed_marker(target_lookahed_x,target_lookahed_y,target_yaw)
-        else:
-            cmd_vel = Twist()
-            self.cmdvel_pub.publish(cmd_vel)
         #debug
         self.value_pub1.publish(Vx)
         self.value_pub2.publish(Vy)
@@ -405,8 +392,6 @@ class Simple_path_follower():
                 last_x = self.path_x_np[indx]
                 last_y = self.path_y_np[indx]
                 last_st = self.path_st_np[indx]
-            self.GOAL=[self.path_x_np[-1],self.path_y_np[-1]]
-            self.goaldist_max = math.sqrt((self.GOAL[0]-self.current_x)**2+(self.GOAL[1]-self.current_y)**2)
             self.angle=self.quaternion_to_euler([w0,w1,w2,w3])
             #曲率計算
             x_t = np.gradient(self.path_x_np)
