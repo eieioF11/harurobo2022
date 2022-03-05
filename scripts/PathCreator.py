@@ -145,6 +145,8 @@ class path_creator():
                     self.endx=self.path[-1,1]
                     self.endy=self.path[-1,0]
                     self.dot.append(dot)
+            if event.key == 'c':#キャッチ
+                pass
             if event.key == 'd':
                 if self.path!=[]:
                     self.dot[-1].remove()
