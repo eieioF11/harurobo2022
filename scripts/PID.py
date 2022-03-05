@@ -20,6 +20,18 @@ class PID():
         self.KI=Ki
         self.KD=Kd
 
+    def output_dev(self,deviation,dt):#目標値 r 出力値 y
+        self.past = self.deviation
+        self.deviation = deviation                                   #偏差
+        self.integral += ((self.past + self.deviation) / 2) * dt #積分
+        differential = (self.deviation - self.past) / dt         #微分
+        pid = self.KP * self.deviation + self.KI * self.integral + self.KD * differential
+        if pid > self.Max:
+            pid = self.Max
+        if pid < self.Min:
+            pid = self.Min
+        return pid
+
     def output(self,r,y,dt):#目標値 r 出力値 y
         self.past = self.deviation
         self.deviation = r - y                                   #偏差

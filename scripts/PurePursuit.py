@@ -39,12 +39,12 @@ class Simple_path_follower():
         rospy.init_node('Simple_Path_Follower', anonymous=True)
         self.r = rospy.Rate(50)  # 50hz
 
-        self.target_speed_max    = 2.0   #target max speed [m/h]
+        self.target_speed_max    = 1.0   #target max speed [m/h]
         self.target_speed_min    = 0.3   #target min speed [m/h]
         self.accel               = 0.01  #target accel[m/h^2]
         self.target_LookahedDist = 0.5   #Lookahed distance for Pure Pursuit[m]
         angler_max               = 0.5   #[rad/s]
-        self.anglePID=PID(0.5,0.1,0.001,-angler_max,angler_max)
+        self.anglePID=PID(0.5,0.0,0.0,-angler_max,angler_max)
 
         self.GOAL_LIMIT = 0.02
         self.MODE = mode.POSFIXED
@@ -271,6 +271,9 @@ class Simple_path_follower():
                     break
                 if self.cflag==False and np.amax(dist_sp_from_nearest)<=self.GOAL_LIMIT:#check goal
                     self.gflag=True
+            if cflag==True:
+                self.target_lookahed_x=self.GOAL[0]
+                self.target_lookahed_y=self.GOAL[1]
             target_lookahed_x=self.target_lookahed_x
             target_lookahed_y=self.target_lookahed_y
             #calculate target yaw rate
@@ -313,10 +316,17 @@ class Simple_path_follower():
                 self.speed=self.map(goaldist,0.0,distlim,0.0,self.oldspeed)
             else:
                 self.oldspeed=self.speed
-
-            yaw_rate=self.anglePID.output(self.angle,self.current_yaw_euler,dt)
-            Vx=self.speed*math.cos(target_yaw-self.current_yaw_euler)
-            Vy=self.speed*math.sin(target_yaw-self.current_yaw_euler)
+            #self.angle=math.radians(180)
+            dev1=self.angle-self.current_yaw_euler
+            dev2=(dev1/math.fabs(dev1))*(math.fabs(self.angle)+math.fabs(self.current_yaw_euler)-2*math.pi)
+            dev=0
+            if math.fabs(dev1)>math.fabs(dev2):
+                dev=dev2
+            else:
+                dev=dev1
+            yaw_rate=self.anglePID.output_dev(dev,dt)
+            #Vx=self.speed*math.cos(target_yaw-self.current_yaw_euler)
+            #Vy=self.speed*math.sin(target_yaw-self.current_yaw_euler)
 
             cmd_vel = Twist()
             cmd_vel.linear.x = Vx    #[m/s]
@@ -326,6 +336,7 @@ class Simple_path_follower():
             cmd_vel.angular.y = 0.0
             cmd_vel.angular.z = yaw_rate
             self.cmdvel_pub.publish(cmd_vel)
+            print(dev1,dev2)
             rospy.loginfo("dt:{:.2f}[s],Speed:{:.3f}[m/s],TgYaw:{:.3f}[rad],angle:{:.3f}[deg],Yaw:{:.3f}[deg],dist:{:.3f}[m],goaldist:{:.3f},distlim:{:.3f},tld size:{}".format(dt,self.speed,target_yaw,math.degrees(self.angle),math.degrees(self.current_yaw_euler),self.dist,goaldist,distlim,len(self.tld)))
             #publish maker
             self.publish_lookahed_marker(target_lookahed_x,target_lookahed_y,target_yaw)

@@ -169,6 +169,13 @@ class path_creator():
                         self.end=True
                         self.save_csv()
                         plt.title("Path generation is completed!")
+                    if event.key == '@':
+                        if len(self.goal)>1:
+                            self.path=np.vstack((self.path,self.goal))
+                        self.line1,=plt.plot(self.path[:,1],self.path[:,0],c="red")
+                        self.path=self.pathconverter(self.path)
+                        self.line2,=plt.plot(self.path[:,1],self.path[:,0],c="Cyan")
+                        plt.title("Path show!")
                     if event.key == 'i':
                         if self.path==[]:
                             self.path=np.array(self.start)
@@ -193,7 +200,12 @@ class path_creator():
                         plt.title("hand mode (1,2)")
                         self.handmode=True
                     if event.key == 'd':
-                        if self.path!=[]:
+                        try:
+                            self.line1.remove()
+                            self.line2.remove()
+                        except:
+                            pass
+                        if len(self.path)!=0:
                             self.dot[-1].remove()
                             del self.dot[-1]
                             self.path=np.delete(self.path,-1, 0)
@@ -384,7 +396,10 @@ class path_creator():
             plt.xlim(x,x+w)
             plt.ylim(y+h,y)
         self.t1 = ax.text(x,y, str(""))
-        self.start=self.read_csv()
+        try:
+            self.start=self.read_csv()
+        except:
+            pass
         plt.text(x+10,y+10, "d:delete p:path generation n:create new path i:initial position" )
         #plt.imshow(self.map[y:y+h,x:x+w])
         plt.imshow(self.map)
