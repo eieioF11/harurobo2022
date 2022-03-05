@@ -24,6 +24,7 @@ class path_creator():
         self.index_oy=index_oy
         self.resolution=resolution
         self.dot=[]
+        self.dot_goal=None
         self.end=False
         self.start=start
         self.field=field
@@ -35,6 +36,16 @@ class path_creator():
         self.endx=0
         self.endy=0
         self.angle=0.0
+        self.inputflag=False
+        self.inputendflag=False
+        self.strnum=""
+        self.POINT=[]
+        self.goal=[]
+        self.sign=1
+
+        self.handmode=False
+        self.hand=[0,0]
+        self.arm=0
 
     def euler_to_quaternion(self,angle):
         q = tf.transformations.quaternion_from_euler(0,0,math.radians(angle))
@@ -50,6 +61,9 @@ class path_creator():
         df.insert(len(df.columns),"w1",q[1])
         df.insert(len(df.columns),"w2",q[2])
         df.insert(len(df.columns),"w3",q[3])
+        df.insert(len(df.columns),"arm",self.arm)
+        df.insert(len(df.columns),"hand1",self.hand[0])
+        df.insert(len(df.columns),"hand2",self.hand[1])
         print(df)
         fpath=os.environ['HOME']+"/catkin_ws/src/harurobo2022/scripts/csv/"+self.field+"/"
         fname=[]
@@ -96,7 +110,7 @@ class path_creator():
         x = int(event.xdata)
         y = int(event.ydata)
 
-        if event.button == 1:
+        if event.button == 1 and  not self.handmode and not self.inputflag:
             if not self.map[y,x] and not self.end:
                 plt.title("Initial position addition with i key")
                 if self.path==[]:
@@ -123,47 +137,137 @@ class path_creator():
     def onkey(self,event):
         print('you pressed', event.key, event.xdata, event.ydata)
         if not self.end:
-            if event.key == 'p':
-                self.line1,=plt.plot(self.path[:,1],self.path[:,0],c="red")
-                self.path=self.pathconverter(self.path)
-                self.line2,=plt.plot(self.path[:,1],self.path[:,0],c="Cyan")
-                #経路配信
-                self.ros_path=self.path_generation(self.path,self.index_ox,self.index_oy,self.resolution)
-                self.end=True
-                self.save_csv()
-                plt.title("Path generation is completed!")
-            if event.key == 'i':
-                if self.path==[]:
-                    self.path=np.array(self.start)
-                    dot,=plt.plot(self.path[1],self.path[0],"o",c="red")
-                    self.endx=self.path[1]
-                    self.endy=self.path[0]
-                    self.dot.append(dot)
+            if not self.inputflag:
+                if not self.handmode:
+                    if event.key == 'p':
+                        if len(self.goal)>1:
+                            self.path=np.vstack((self.path,self.goal))
+                        self.line1,=plt.plot(self.path[:,1],self.path[:,0],c="red")
+                        self.path=self.pathconverter(self.path)
+                        self.line2,=plt.plot(self.path[:,1],self.path[:,0],c="Cyan")
+                        #経路配信
+                        self.ros_path=self.path_generation(self.path,self.index_ox,self.index_oy,self.resolution)
+                        self.end=True
+                        self.save_csv()
+                        plt.title("Path generation is completed!")
+                    if event.key == 'i':
+                        if self.path==[]:
+                            self.path=np.array(self.start)
+                            dot,=plt.plot(self.path[1],self.path[0],"o",c="red")
+                            self.endx=self.path[1]
+                            self.endy=self.path[0]
+                            self.dot.append(dot)
+                        else:
+                            self.path=np.vstack((self.path,self.start))
+                            dot,=plt.plot(self.path[:,1],self.path[:,0],"o",c="red")
+                            self.endx=self.path[-1,1]
+                            self.endy=self.path[-1,0]
+                            self.dot.append(dot)
+                    if event.key == 't':#入力
+                        self.inputflag=True
+                        self.strnum=""
+                        self.sign=1
+                        plt.title("")
+                        self.inputendflag=False
+                    if event.key == 'h':#キャッチ
+                        plt.title("hand mode (1,2)")
+                        self.handmode=True
+                    if event.key == 'd':
+                        if self.path!=[]:
+                            self.dot[-1].remove()
+                            del self.dot[-1]
+                            self.path=np.delete(self.path,-1, 0)
+                            print(self.dot,self.path)
+                        else:
+                            plt.title("Error")
+                    if event.key == '1':
+                        self.arm=1
+                    if event.key == '2':
+                        self.arm=2
+                    if event.key == '3':
+                        self.arm=3
                 else:
-                    self.path=np.vstack((self.path,self.start))
-                    dot,=plt.plot(self.path[:,1],self.path[:,0],"o",c="red")
-                    self.endx=self.path[-1,1]
-                    self.endy=self.path[-1,0]
-                    self.dot.append(dot)
-            if event.key == 'c':#キャッチ
-                pass
-            if event.key == 'd':
-                if self.path!=[]:
-                    self.dot[-1].remove()
-                    del self.dot[-1]
-                    self.path=np.delete(self.path,-1, 0)
-                    print(self.dot,self.path)
+                    if event.key == 'e':
+                        self.handmode=False
+                        plt.title("")
+                    elif event.key == '1':
+                        self.hand[0]=1
+                        plt.title("hand1 on")
+                    elif event.key == '2':
+                        self.hand[1]=1
+                        plt.title("hand2 on")
+                    elif event.key == 'r':
+                        self.hand=[0,0]
+                        plt.title("hand all off")
+
+            else:
+                if event.key == 'e':
+                    self.inputflag=False
+                    self.inputendflag=False
+                    plt.title("")
+                elif event.key == 'r':
+                    self.strnum=""
+                    self.POINT=[]
+                    plt.title("")
+                    self.sign=1
+                    if self.dot_goal!=None:
+                        self.dot_goal.remove()
+                    self.inputendflag=False
+                elif event.key == 'd':
+                    self.strnum=""
+                    self.inputendflag=False
+                    plt.title("")
+                elif event.key==u'enter' and not self.inputendflag:
+                    if len(self.POINT)!=2:
+                        self.POINT.append(int(self.strnum)*0.001*self.sign)
+                    else:
+                        self.angle = self.sign*int(self.strnum)
+                        self.inputendflag=True
+                        plt.title(str(self.POINT)+str(self.angle))
+                        self.goal=self.point_generation(self.POINT,self.index_ox,self.index_oy,self.resolution)
+                        print(self.goal)
+                        self.dot_goal,=plt.plot(self.goal[1],self.goal[0],"o",c="blue")
+                    self.strnum=""
+                    self.sign=1
+                    plt.title("")
+                elif not self.inputendflag:
+                    try:
+                        if event.key == '-':
+                            self.sign=-1
+                        else:
+                            num=int(event.key)
+                            self.strnum+=event.key
+                        if len(self.POINT)!=2:
+                            if self.sign<0:
+                                plt.title("-"+self.strnum+"[mm]")
+                            else:
+                                plt.title(self.strnum+"[mm]")
+                        else:
+                            if self.sign<0:
+                                plt.title("-"+self.strnum+"[deg]")
+                            else:
+                                plt.title(self.strnum+"[deg]")
+                    except:
+                        plt.title("Error")
+                        pass
                 else:
-                    plt.title("Error")
+                    plt.title(str(self.POINT)+str(self.angle))
+                    self.goal=self.point_generation(self.POINT,self.index_ox,self.index_oy,self.resolution)
+                    print(self.goal)
+                    self.dot_goal,=plt.plot(self.goal[1],self.goal[0],"o",c="blue")
 
         if event.key == 'n':
             if self.end:
                 self.path=[self.path[-1,0],self.path[-1,1]]
                 self.line1.remove()
                 self.line2.remove()
+                if self.dot_goal!=None:
+                    self.dot_goal.remove()
                 for d in self.dot:
                     d.remove()
                 self.dot=[]
+                self.goal=[]
+                self.dot_goal=None
                 self.end=False
                 dot,=plt.plot(self.path[1],self.path[0],"o",c="Blue")
                 self.dot.append(dot)
@@ -200,6 +304,10 @@ class path_creator():
         print cpath
         return cpath
 
+    def point_generation(self,point,ox,oy,resolution):
+        px = (point[0]/resolution)+ox
+        py = (point[1]/resolution)+oy
+        return [int(px),int(py)]
     #path generation
     def path_generation(self,sPath,ox,oy,resolution):#ROSにpath形式のデータを配信
         #Initialize odometry header
