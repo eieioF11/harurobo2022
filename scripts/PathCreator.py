@@ -182,10 +182,13 @@ class path_creator():
                             plt.title("Error")
                     if event.key == '1':
                         self.arm=1
+                        plt.title("arm mode1")
                     if event.key == '2':
                         self.arm=2
+                        plt.title("arm mode2")
                     if event.key == '3':
                         self.arm=3
+                        plt.title("arm mode3")
                 else:
                     if event.key == 'e':
                         self.handmode=False
