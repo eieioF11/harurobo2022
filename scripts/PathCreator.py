@@ -51,6 +51,25 @@ class path_creator():
         q = tf.transformations.quaternion_from_euler(0,0,math.radians(angle))
         return q
 
+    def read_csv(self):
+        n=0
+        fpath=os.environ['HOME']+"/catkin_ws/src/harurobo2022/scripts/csv/"+self.field+"/"
+        fname=[]
+        for f in glob.glob(fpath+'*.csv'):
+            fname.append(int(os.path.splitext(os.path.basename(f))[0]))
+        #print(fname)
+        n=0
+        if len(fname):
+            n=max(fname)
+        print(str(n)+".csv")
+        self.csv_path_data = pd.read_csv(fpath+str(n)+".csv")
+        pathend=[0,0]
+        for indx in range(len(self.csv_path_data)):
+            pathend[0] = self.csv_path_data["x"][indx]
+            pathend[1] = self.csv_path_data["y"][indx]
+        pathend=self.point_generation(pathend,self.index_ox,self.index_oy,self.resolution)
+        return pathend
+
     def save_csv(self):
         # Save CSV path file
         cols = ["x", "y"]
@@ -167,6 +186,7 @@ class path_creator():
                         self.inputflag=True
                         self.strnum=""
                         self.sign=1
+                        self.POINT=[]
                         plt.title("")
                         self.inputendflag=False
                     if event.key == 'h':#キャッチ
@@ -261,6 +281,7 @@ class path_creator():
 
         if event.key == 'n':
             if self.end:
+                self.start=self.read_csv()
                 self.path=[self.path[-1,0],self.path[-1,1]]
                 self.line1.remove()
                 self.line2.remove()
@@ -363,6 +384,7 @@ class path_creator():
             plt.xlim(x,x+w)
             plt.ylim(y+h,y)
         self.t1 = ax.text(x,y, str(""))
+        self.start=self.read_csv()
         plt.text(x+10,y+10, "d:delete p:path generation n:create new path i:initial position" )
         #plt.imshow(self.map[y:y+h,x:x+w])
         plt.imshow(self.map)

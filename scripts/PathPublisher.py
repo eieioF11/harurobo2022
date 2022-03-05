@@ -11,6 +11,8 @@ from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Header
 from nav_msgs.msg import Path
 from std_msgs.msg import Bool
+from std_msgs.msg import Float32
+from std_msgs.msg import Int16MultiArray
 
 #########################
 # Simple Path publisher #
@@ -31,18 +33,33 @@ class Simple_path_simulator():
         self.path_header.frame_id = "map"
 
         #initialize publisher
-        self.pathn_pub = rospy.Publisher("/path_now", Path, queue_size=50)
-        self.path_pub = rospy.Publisher("/path", Path, queue_size=50)
+        self.pathn_pub = rospy.Publisher("/path_now",Path, queue_size=50)
+        self.path_pub = rospy.Publisher("/path",Path, queue_size=50)
+        self.arm_pub = rospy.Publisher("/arm_mode",Float32, queue_size=50)
+        self.hand_pub = rospy.Publisher("/hand",Int16MultiArray, queue_size=50)
         self.odom_sub = rospy.Subscriber('move_end',Bool, self.end)
         self.pathn = Path()
         self.pathn.header = self.path_header
         self.field = field
+        self.arm=1
+        self.hand=[0,0]
 
     def end(self,value):
         print(value)
         if bool(value)==True:
             self.n+=1
             self.pathn=self.path
+            array_forPublish = Int16MultiArray(data=self.hand)
+            self.hand_pub.publish(array_forPublish)
+    def armsend(self,mode):
+        angle=0.0
+        if mode==1:
+            angle=0.0
+        elif mode==2:
+            angle=30.0
+        elif mode==3:
+            angle=180.0
+        self.arm_pub.publish(angle)
 
     #############################################
     # Update odometry form User request cmd_vel #
@@ -58,6 +75,9 @@ class Simple_path_simulator():
             temp_pose.pose.orientation.y = self.csv_path_data["w1"][indx]
             temp_pose.pose.orientation.z = self.csv_path_data["w2"][indx]
             temp_pose.pose.orientation.w = self.csv_path_data["w3"][indx]
+            self.arm=self.csv_path_data["arm"][indx]
+            self.hand[0]=self.csv_path_data["hand1"][indx]
+            self.hand[1]=self.csv_path_data["hand2"][indx]
             temp_pose.header = self.path_header
             temp_pose.header.seq = indx
             poses_list.append(temp_pose)
@@ -80,6 +100,7 @@ class Simple_path_simulator():
             #get pose data from csv
             pose_list = self.get_poses_from_csvdata()
             self.path.poses =pose_list
+            self.armsend(self.arm)
             print self.n
             self.pathn_pub.publish(self.pathn)
             self.path_pub.publish(self.path)
