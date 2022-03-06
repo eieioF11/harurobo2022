@@ -39,14 +39,17 @@ class Simple_path_follower():
         rospy.init_node('Simple_Path_Follower', anonymous=True)
         self.r = rospy.Rate(50)  # 50hz
 
-        self.target_speed_max    = 1.0   #target max speed [m/h]
+        #self.target_speed_max    = 1.5   #target max speed [m/h]
+        self.target_speed_max    = 0.5   #target max speed [m/h]
         self.target_speed_min    = 0.3   #target min speed [m/h]
-        self.accel               = 0.01  #target accel[m/h^2]
+        #self.accel               = 0.004 #target accel[m/h^2]
+        self.accel               = 0.005 #target accel[m/h^2]
         self.target_LookahedDist = 0.5   #Lookahed distance for Pure Pursuit[m]
-        angler_max               = 0.5   #[rad/s]
-        self.anglePID=PID(0.5,0.0,0.0,-angler_max,angler_max)
-
-        self.GOAL_LIMIT = 0.02
+        #angler_max               = 0.6   #[rad/s]
+        angler_max               = 0.25   #[rad/s]
+        self.anglePID=PID(0.51,0.0,0.0,-angler_max,angler_max)
+        self.ANGLE_LIMIT = math.radians(0.5)#[rad]
+        self.GOAL_LIMIT = 0.015#[m]
         self.MODE = mode.POSFIXED
 
         #first flg (for subscribe global path topic)
@@ -96,6 +99,8 @@ class Simple_path_follower():
         self.maxCV=0
         self.minCV=0
         self.tld=[]
+        self.dev=0
+        self.angleflag=True
 
     def map(self,x,in_min,in_max,out_min,out_max):
         value=(x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
@@ -288,20 +293,34 @@ class Simple_path_follower():
                     self.gflag=True
             target_yaw=self.target_yaw
             #End processing
-            if self.gflag:
+            if self.gflag and math.fabs(self.dev)<=self.ANGLE_LIMIT:
                 cmd_vel = Twist()
                 self.cmdvel_pub.publish(cmd_vel)
                 self.path_first_flg = False
-                rospy.loginfo("dist:"+str(self.dist)+"[m],"+str(self.GOAL))
+                rospy.loginfo("dist:"+str(self.dist)+"[m],Goal"+str(self.GOAL)+",Now"+str([self.current_x,self.current_y]))
                 rospy.loginfo("goal!!")
                 return
 
             #Set Cmdvel
             dt=self.deltaT()
+            #self.angle=math.radians(180)
+            dev1=self.angle-self.current_yaw_euler
+            dev2=(dev1/math.fabs(dev1))*(math.fabs(self.angle)+math.fabs(self.current_yaw_euler)-2*math.pi)
+            if math.fabs(dev1)>math.fabs(dev2):
+                self.dev=dev2
+            else:
+                self.dev=dev1
+            yaw_rate=self.anglePID.output_dev(self.dev,dt)
+
             if self.first:
-                self.speed += self.accel
-                if self.speed>=self.target_speed_max:
-                    self.first=False
+                if self.angleflag:
+                    if math.fabs(self.dev)<=self.ANGLE_LIMIT+1:
+                        self.angleflag=False
+                    self.speed=0.0
+                else:
+                    self.speed += self.accel
+                    if self.speed>=self.target_speed_max:
+                        self.first=False
             elif not self.first:
                 if self.speed>(self.target_speed_max):
                     self.speed=self.target_speed_max
@@ -316,17 +335,9 @@ class Simple_path_follower():
                 self.speed=self.map(goaldist,0.0,distlim,0.0,self.oldspeed)
             else:
                 self.oldspeed=self.speed
-            #self.angle=math.radians(180)
-            dev1=self.angle-self.current_yaw_euler
-            dev2=(dev1/math.fabs(dev1))*(math.fabs(self.angle)+math.fabs(self.current_yaw_euler)-2*math.pi)
-            dev=0
-            if math.fabs(dev1)>math.fabs(dev2):
-                dev=dev2
-            else:
-                dev=dev1
-            yaw_rate=self.anglePID.output_dev(dev,dt)
-            #Vx=self.speed*math.cos(target_yaw-self.current_yaw_euler)
-            #Vy=self.speed*math.sin(target_yaw-self.current_yaw_euler)
+
+            Vx=self.speed*math.cos(target_yaw-self.current_yaw_euler)
+            Vy=self.speed*math.sin(target_yaw-self.current_yaw_euler)
 
             cmd_vel = Twist()
             cmd_vel.linear.x = Vx    #[m/s]
@@ -435,7 +446,7 @@ class Simple_path_follower():
             self.cur_diff=np.amax(self.curvature_val)-np.amin(self.curvature_val)#曲率最大最小の差
             self.maxCV=np.amax(self.curvature_val)
             self.minCV=np.amin(self.curvature_val)
-            self.first = self.path_first_flg = True
+            self.first = self.angleflag = self.path_first_flg = True
             self.end_pub.publish(True)
             self.gflag=False
             self.speed=0

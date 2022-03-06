@@ -61,7 +61,13 @@ class wheelodom():
         if self.iniflag:
             self.yaw_range=value.twist.twist.angular.z
             self.iniflag=False
-        self.yaw=(value.twist.twist.angular.z-self.yaw_range)*-1
+        yaw=(value.twist.twist.angular.z-self.yaw_range)*-1
+        if yaw<=-math.pi:
+            self.yaw=2*math.pi+yaw
+        elif yaw>=math.pi:
+            self.yaw=-2*math.pi+yaw
+        else:
+            self.yaw=yaw
         value.twist.twist.angular.z=0.0
         #ホイールの速度をロボット座標のxy方向の速度に変換
         rx=self.R*0.7071067812*(w0+w1)
