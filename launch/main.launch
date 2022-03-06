@@ -24,6 +24,8 @@
 		</include>
 	</group>
 
+	<!-- odometry -->
+	<node pkg="harurobo2022" type="wheelodometry.py" name="wheelodometry" output="screen"/>
 	<!-- Path Follower 
 	<node pkg="harurobo2022" type="PurePursuit.py" name="PurePursuit" output="screen"/>-->
 

@@ -1,0 +1,13 @@
+<launch>
+	<arg name="lrf_port" default="/dev/ttyACM0"/>
+	<arg name="mother_port" default="/dev/ttyUSB0"/>
+	<node pkg="urg_node" type="urg_node" name="urg_node" output="screen">
+		<param name="port" value="$(arg lrf_port)" />
+	</node>
+
+	<node pkg="rosserial_python" type="serial_node.py" name="rosserial" output="screen">
+		<param name="port" value="$(arg mother_port)" />
+		<param name="baud" value="115200" />
+	</node>
+
+</launch>
