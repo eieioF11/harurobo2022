@@ -21,6 +21,19 @@ rosrun teleop_twist_keyboard teleop_twist_keyboard.py
 ```bash
 ls -l /dev/serial/by-id/
 ```
+## LiDAR & マザー基板通信
+```bash
+roslaunch harurobo2022 robo.launch lrf_port:=/dev/ttyACM0 mother_port:=/dev/ttyUSB0
+```
+## main launch
+赤ゾーン
+```bash
+roslaunch harurobo2022 main.launch Field:=Red
+```
+青ゾーン
+```bash
+roslaunch harurobo2022 main.launch Field:=Blue
+```
 ## USB Serial
 ```bash
 rosrun rosserial_python serial_node.py /dev/ttyUSB0 _baud:=115200
@@ -36,10 +49,6 @@ rosrun urg_node urg_node _serial_port:=/dev/ttyACM0
 ## オドメトリ
 ```bash
 rosrun harurobo2022 wheelodometry.py
-```
-## main launch
-```bash
-roslaunch harurobo2022 main.launch
 ```
 ## Gazebo
 スタートゾーンの色が赤の場合
