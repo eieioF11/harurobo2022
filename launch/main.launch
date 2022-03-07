@@ -3,29 +3,51 @@
 	<arg name="Field" default="Red"/>
 	<arg name="map_file" default="$(find harurobo2022)/map/map_world_CG.yaml"/>
 	<arg name="open_rviz" default="true"/>
+	<arg name="gazebo" default="false"/>
 
-	<!--TF-->
-	<!--<node pkg="tf" type="static_transform_publisher" name="odom_2_base_link" args="0.27 0 0 0 0 3.14 base_link laser 100" />-->
-	<node pkg="tf" type="static_transform_publisher" name="odom_2_base_link" args="0.27 0 0 0 0 0 base_link laser 100" />
-
-	<!-- odom -->
-	<group if="$(eval Field == 'Red')">
-		<include file="$(find harurobo2022)/launch/odom.launch">
-			<arg name="map_file" value="$(find harurobo2022)/map/map_world_Red.yaml" />
-			<arg name="open_rviz" default="$(arg open_rviz)"/>
-			<arg name="Field" default="$(arg Field)"/>
-		</include>
+	<group unless="$(arg gazebo)">
+		<!--TF-->
+		<!--<node pkg="tf" type="static_transform_publisher" name="odom_2_base_link" args="0.27 0 0 0 0 3.14 base_link laser 100" />-->
+		<node pkg="tf" type="static_transform_publisher" name="odom_2_base_link" args="0.27 0 0 0 0 0 base_link laser 100" />
+		<!-- odom -->
+		<group if="$(eval Field == 'Red')">
+			<include file="$(find harurobo2022)/launch/odom.launch">
+				<arg name="map_file" value="$(find harurobo2022)/map/map_world_Red.yaml" />
+				<arg name="open_rviz" default="$(arg open_rviz)"/>
+				<arg name="Field" default="$(arg Field)"/>
+			</include>
+		</group>
+		<group if="$(eval Field == 'Blue')">
+			<include file="$(find harurobo2022)/launch/odom.launch">
+				<arg name="map_file" value="$(find harurobo2022)/map/map_world_Blue.yaml" />
+				<arg name="open_rviz" default="$(arg open_rviz)"/>
+				<arg name="Field" default="$(arg Field)"/>
+			</include>
+		</group>
+		<!-- odometry -->
+		<node pkg="harurobo2022" type="wheelodometry.py" name="wheelodometry" output="screen"/>
 	</group>
-	<group if="$(eval Field == 'Blue')">
-		<include file="$(find harurobo2022)/launch/odom.launch">
-			<arg name="map_file" value="$(find harurobo2022)/map/map_world_Blue.yaml" />
-			<arg name="open_rviz" default="$(arg open_rviz)"/>
-			<arg name="Field" default="$(arg Field)"/>
-		</include>
+	<group if="$(arg gazebo)">
+		<!-- odom -->
+		<group if="$(eval Field == 'Red')">
+			<include file="$(find harurobo2022)/launch/odom.launch">
+				<arg name="map_file" value="$(find harurobo2022)/map/map_world_Red.yaml" />
+				<arg name="scan_topic" value="laser_link/scan" />
+				<arg name="open_rviz" default="$(arg open_rviz)"/>
+				<arg name="gazebo" default="$(arg gazebo)"/>
+			</include>
+		</group>
+		<group if="$(eval Field == 'Blue')">
+			<include file="$(find harurobo2022)/launch/odom.launch">
+				<arg name="map_file" value="$(find harurobo2022)/map/map_world_Blue.yaml" />
+				<arg name="scan_topic" value="laser_link/scan" />
+				<arg name="open_rviz" default="$(arg open_rviz)"/>
+				<arg name="gazebo" default="$(arg gazebo)"/>
+			</include>
+		</group>
 	</group>
 
-	<!-- odometry -->
-	<node pkg="harurobo2022" type="wheelodometry.py" name="wheelodometry" output="screen"/>
+
 	<!-- Path Follower 
 	<node pkg="harurobo2022" type="PurePursuit.py" name="PurePursuit" output="screen"/>-->
 
