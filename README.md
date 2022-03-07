@@ -34,6 +34,11 @@ roslaunch harurobo2022 main.launch Field:=Red
 ```bash
 roslaunch harurobo2022 main.launch Field:=Blue
 ```
+Gazebo
+```bash
+roslaunch harurobo2022 main.launch Field:=Red gazebo:=true
+roslaunch harurobo2022 main.launch Field:=Blue gazebo:=true
+```
 ## USB Serial
 ```bash
 rosrun rosserial_python serial_node.py /dev/ttyUSB0 _baud:=115200
