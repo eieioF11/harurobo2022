@@ -35,19 +35,21 @@ class Simple_path_follower():
     # Initialization #
     ##################
     def __init__(self):
-
+        #パラメータ
         rospy.init_node('Simple_Path_Follower', anonymous=True)
         self.r = rospy.Rate(50)  # 50hz
 
         #self.target_speed_max    = 1.5   #target max speed [m/h]
-        self.target_speed_max    = 0.5   #target max speed [m/h]
+        #self.target_speed_max    = 0.5   #target max speed [m/h]
+        self.target_speed_max    = 0.45   #target max speed [m/h]
         self.target_speed_min    = 0.3   #target min speed [m/h]
         #self.accel               = 0.004 #target accel[m/h^2]
         self.accel               = 0.005 #target accel[m/h^2]
         self.target_LookahedDist = 0.5   #Lookahed distance for Pure Pursuit[m]
         #angler_max               = 0.6   #[rad/s]
-        angler_max               = 0.25   #[rad/s]
-        self.anglePID=PID(0.51,0.0,0.0,-angler_max,angler_max)
+        #angler_max               = 0.25   #[rad/s]
+        angler_max               = 0.7   #[rad/s]
+        self.anglePID=PID(0.7,0.0,0.0,-angler_max,angler_max)
         self.ANGLE_LIMIT = math.radians(0.5)#[rad]
         self.GOAL_LIMIT = 0.015#[m]
         self.MODE = mode.POSFIXED
@@ -56,6 +58,7 @@ class Simple_path_follower():
         self.path_first_flg = False
         self.odom_first_flg = False
         self.position_search_flg = False
+        self.angleflag=True
         self.last_indx = 0
 
         #initialize publisher
@@ -100,7 +103,6 @@ class Simple_path_follower():
         self.minCV=0
         self.tld=[]
         self.dev=0
-        self.angleflag=True
 
     def map(self,x,in_min,in_max,out_min,out_max):
         value=(x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
@@ -257,14 +259,12 @@ class Simple_path_follower():
         cflag=False
         if self.path_first_flg == True and self.odom_first_flg == True:
 
-            #Target point calculation
+            #ターゲットポイントの計算
             dist_from_current_pos_np = np.sqrt(np.power((self.path_x_np-self.current_x),2) + np.power((self.path_y_np-self.current_y),2))
             for i in range(len(self.tld)):
                 print (i,dist_from_current_pos_np[i])
                 dist_sp_from_nearest=self.tld[i]
                 self.nowCV=self.curvature_val[i]
-                #speed=self.target_speed_max
-                #speed=math.fabs(self.target_LookahedDist-self.map(self.nowCV,self.minCV,self.maxCV,self.target_speed_min,self.target_speed_max))
                 if (dist_from_current_pos_np[i]) > self.tld[i]:
                     self.target_lookahed_x = self.path_x_np[i]
                     self.target_lookahed_y = self.path_y_np[i]
@@ -281,18 +281,18 @@ class Simple_path_follower():
                 self.target_lookahed_y=self.GOAL[1]
             target_lookahed_x=self.target_lookahed_x
             target_lookahed_y=self.target_lookahed_y
-            #calculate target yaw rate
+            #ターゲットの角度計算
             self.target_yaw = math.atan2(target_lookahed_y-self.current_y,target_lookahed_x-self.current_x)
             cflag=self.cflag
             if self.cflag:
                 self.cflag=False
             else:
                 self.dist=math.sqrt((self.target_lookahed_x-self.current_x)**2+(self.target_lookahed_y-self.current_y)**2)
-                #self.speed=self.map(self.dist,0.0,self.target_LookahedDist,0.0,self.oldspeed)
-                if self.dist <= self.GOAL_LIMIT:
+                if self.dist <= self.GOAL_LIMIT:#位置の判定
                     self.gflag=True
             target_yaw=self.target_yaw
-            #End processing
+
+            #終了処理
             if self.gflag and math.fabs(self.dev)<=self.ANGLE_LIMIT:
                 cmd_vel = Twist()
                 self.cmdvel_pub.publish(cmd_vel)
@@ -301,20 +301,30 @@ class Simple_path_follower():
                 rospy.loginfo("goal!!")
                 return
 
-            #Set Cmdvel
+            #処理時間計算
             dt=self.deltaT()
-            #self.angle=math.radians(180)
-            dev1=self.angle-self.current_yaw_euler
-            dev2=(dev1/math.fabs(dev1))*(math.fabs(self.angle)+math.fabs(self.current_yaw_euler)-2*math.pi)
-            if math.fabs(dev1)>math.fabs(dev2):
-                self.dev=dev2
+            #姿勢制御
+            if np.sign(self.angle)==np.sign(self.current_yaw_euler):
+                self.dev=np.sign(self.current_yaw_euler)*(math.fabs(self.angle)-math.fabs(self.current_yaw_euler))
             else:
-                self.dev=dev1
-            yaw_rate=self.anglePID.output_dev(self.dev,dt)
+                if self.angle!=0:
+                    self.dev=np.sign(self.current_yaw_euler)*(2*math.pi-math.fabs(self.angle)-math.fabs(self.current_yaw_euler))
+                else:
+                    self.dev=-self.current_yaw_euler
+            dev1=np.sign(self.angle)
+            dev2=np.sign(self.current_yaw_euler)
+            #dev1=self.angle-self.current_yaw_euler
+            #dev2=(dev1/math.fabs(dev1))*(math.fabs(self.angle)+math.fabs(self.current_yaw_euler)-2*math.pi)
+            #if math.fabs(dev1)>=math.fabs(dev2):
+            #    self.dev=dev2
+            #else:
+            #    self.dev=dev1
+            yaw_rate=self.anglePID.output_dev(self.dev,dt)#PID
 
+            #加速処理
             if self.first:
                 if self.angleflag:
-                    if math.fabs(self.dev)<=self.ANGLE_LIMIT+1:
+                    if math.fabs(self.dev)<=self.ANGLE_LIMIT:
                         self.angleflag=False
                     self.speed=0.0
                 else:
@@ -324,21 +334,22 @@ class Simple_path_follower():
             elif not self.first:
                 if self.speed>(self.target_speed_max):
                     self.speed=self.target_speed_max
-                #elif speed<(self.target_speed_min):
-                #    speed=self.target_speed_min
             else:
                 self.speed=0
 
-            goaldist = math.sqrt((self.GOAL[0]-self.current_x)**2+(self.GOAL[1]-self.current_y)**2)
+            #減速処理
+            goaldist = math.sqrt((self.GOAL[0]-self.current_x)**2+(self.GOAL[1]-self.current_y)**2)#ゴールまでの距離計算
             distlim = self.goaldist_max/5
             if goaldist <= distlim:
-                self.speed=self.map(goaldist,0.0,distlim,0.0,self.oldspeed)
+                self.speed=self.map(goaldist,0.0,distlim,0.0,self.oldspeed)#ゴールまでの距離に応じて速度を変更
             else:
                 self.oldspeed=self.speed
 
+            #Vx,Vy計算(ロボット座標系のx,y方向の速度計算)
             Vx=self.speed*math.cos(target_yaw-self.current_yaw_euler)
             Vy=self.speed*math.sin(target_yaw-self.current_yaw_euler)
 
+            #データの配信
             cmd_vel = Twist()
             cmd_vel.linear.x = Vx    #[m/s]
             cmd_vel.linear.y = Vy
@@ -347,14 +358,14 @@ class Simple_path_follower():
             cmd_vel.angular.y = 0.0
             cmd_vel.angular.z = yaw_rate
             self.cmdvel_pub.publish(cmd_vel)
-            print(dev1,dev2)
-            rospy.loginfo("dt:{:.2f}[s],Speed:{:.3f}[m/s],TgYaw:{:.3f}[rad],angle:{:.3f}[deg],Yaw:{:.3f}[deg],dist:{:.3f}[m],goaldist:{:.3f},distlim:{:.3f},tld size:{}".format(dt,self.speed,target_yaw,math.degrees(self.angle),math.degrees(self.current_yaw_euler),self.dist,goaldist,distlim,len(self.tld)))
-            #publish maker
+            #デバック用print
+            rospy.loginfo("dt:{:.2f}[s],Speed:{:.3f}[m/s],TgYaw:{:.3f}[rad],angle:{:.3f}[deg],Yaw:{:.3f}[deg],dist:{:.3f}[m],goaldist:{:.3f},distlim:{:.3f},tld size:{},dev1:{:.3f},dev2:{:.3f},dev:{:.3f}".format(dt,self.speed,target_yaw,math.degrees(self.angle),math.degrees(self.current_yaw_euler),self.dist,goaldist,distlim,len(self.tld),dev1,dev2,self.dev))
+            #publish maker(目標点をマーカーで配信)
             self.publish_lookahed_marker(target_lookahed_x,target_lookahed_y,target_yaw)
         else:
             cmd_vel = Twist()
             self.cmdvel_pub.publish(cmd_vel)
-        #debug
+        #デバック用
         self.value_pub1.publish(Vx)
         self.value_pub2.publish(Vy)
         self.value_pub3.publish(yaw_rate)
@@ -440,9 +451,6 @@ class Simple_path_follower():
             self.tld=[]
             for i in self.curvature_val:
                 self.tld.append(math.fabs(self.target_LookahedDist-self.map(i,0,np.amax(self.curvature_val),0,self.target_LookahedDist-0.2)))
-            #plt.plot(self.curvature_val)
-            #plt.plot(self.tld)
-            #plt.show()
             self.cur_diff=np.amax(self.curvature_val)-np.amin(self.curvature_val)#曲率最大最小の差
             self.maxCV=np.amax(self.curvature_val)
             self.minCV=np.amin(self.curvature_val)
