@@ -58,7 +58,7 @@ class omuni3():
         self.move(0,0,0)
 
     def move(self,Vx,Vy,Angular):
-        Angular=Angular/4.8
+        Angular=-1*(Angular/4.8)
         w0=(-Vy+Angular)*self.Adjust
         w1=(0.5*Vy+0.866*Vx+Angular)*self.Adjust
         w2=(0.5*Vy-0.866*Vx+Angular)*self.Adjust
